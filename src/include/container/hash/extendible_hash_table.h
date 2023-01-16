@@ -105,6 +105,7 @@ class ExtendibleHashTable : public HashTable<K, V> {
    */
   auto Remove(const K &key) -> bool override;
 
+  auto Incredir() -> void;
   /**
    * Bucket class for each hash table bucket that the directory points to.
    */
@@ -180,7 +181,7 @@ class ExtendibleHashTable : public HashTable<K, V> {
    * @brief Redistribute the kv pairs in a full bucket.
    * @param bucket The bucket to be redistributed.
    */
-  auto RedistributeBucket(std::shared_ptr<Bucket> bucket) -> void;
+  auto RedistributeBucket(std::shared_ptr<Bucket> bucket, int idx) -> void;
 
   /*****************************************************************
    * Must acquire latch_ first before calling the below functions. *

@@ -15,13 +15,16 @@
 #include <limits>
 #include <list>
 #include <mutex>  // NOLINT
+#include <queue>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 #include "common/config.h"
 #include "common/macros.h"
 
 namespace bustub {
+const size_t INF = 0;
 
 /**
  * LRUKReplacer implements the LRU-k replacement policy.
@@ -122,7 +125,6 @@ class LRUKReplacer {
    * @param frame_id id of frame to be removed
    */
   void Remove(frame_id_t frame_id);
-
   /**
    * TODO(P1): Add implementation
    *
@@ -131,14 +133,19 @@ class LRUKReplacer {
    * @return size_t
    */
   auto Size() -> size_t;
+  auto Creattime() -> size_t;
+  auto GetLastTime(frame_id_t frame_id) -> size_t;
+  auto Addstamp(frame_id_t frame_id) -> void;
 
  private:
   // TODO(student): implement me! You can replace these member variables as you like.
   // Remove maybe_unused if you start using them.
   [[maybe_unused]] size_t current_timestamp_{0};
-  [[maybe_unused]] size_t curr_size_{0};
+  // [[maybe_unused]] size_t curr_size_{0};
   [[maybe_unused]] size_t replacer_size_;
   [[maybe_unused]] size_t k_;
+  std::unordered_map<frame_id_t, std::queue<size_t>> timestamp_;
+  std::unordered_set<frame_id_t> replacers_;
   std::mutex latch_;
 };
 

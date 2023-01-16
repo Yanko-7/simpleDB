@@ -15,7 +15,7 @@
 #include <list>
 #include <mutex>  // NOLINT
 #include <unordered_map>
-
+#include <unordered_set>
 #include "buffer/buffer_pool_manager.h"
 #include "buffer/lru_k_replacer.h"
 #include "common/config.h"
@@ -140,12 +140,17 @@ class BufferPoolManagerInstance : public BufferPoolManager {
    */
   auto DeletePgImp(page_id_t page_id) -> bool override;
 
+  auto GetFrame(frame_id_t *frame_id) -> bool;
+
+  auto GetPage(frame_id_t frame_id) -> Page *;
   /** Number of pages in the buffer pool. */
   const size_t pool_size_;
   /** The next page id to be allocated  */
   std::atomic<page_id_t> next_page_id_ = 0;
   /** Bucket size for the extendible hash table */
   const size_t bucket_size_ = 4;
+
+  std::unordered_set<page_id_t> pages_set_;
 
   /** Array of buffer pool pages. */
   Page *pages_;
