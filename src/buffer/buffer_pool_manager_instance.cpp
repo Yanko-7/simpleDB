@@ -48,6 +48,7 @@ auto BufferPoolManagerInstance::NewPgImp(page_id_t *page_id) -> Page * {
   auto *page = GetPage(frame_id);
 
   // recor the info
+  replacer_->SetEvictable(frame_id, false);
   pages_set_.insert(*page_id);
   page_table_->Insert(*page_id, frame_id);
   page->page_id_ = *page_id;
@@ -55,7 +56,6 @@ auto BufferPoolManagerInstance::NewPgImp(page_id_t *page_id) -> Page * {
   page->ResetMemory();
   page->is_dirty_ = false;
   replacer_->RecordAccess(frame_id);
-  replacer_->SetEvictable(frame_id, false);
 
   return page;
 }
@@ -76,15 +76,14 @@ auto BufferPoolManagerInstance::FetchPgImp(page_id_t page_id) -> Page * {
     page->page_id_ = page_id;
     page->pin_count_++;
     page->is_dirty_ = false;
-    replacer_->RecordAccess(frame_id);
     page->ResetMemory();
     replacer_->SetEvictable(frame_id, false);
-
+    replacer_->RecordAccess(frame_id);
     disk_manager_->ReadPage(page_id, page->data_);
     return page;
   }
-  GetPage(frame_id)->pin_count_++;
   replacer_->SetEvictable(frame_id, false);
+  GetPage(frame_id)->pin_count_++;
   replacer_->RecordAccess(frame_id);
   return GetPage(frame_id);
 }
@@ -123,8 +122,15 @@ auto BufferPoolManagerInstance::FlushPgImp(page_id_t page_id) -> bool {
 }
 
 void BufferPoolManagerInstance::FlushAllPgsImp() {
-  for (auto x : pages_set_) {
-    FlushPgImp(x);
+  std::scoped_lock<std::mutex> lock(latch_);
+  for (auto page_id : pages_set_) {
+    frame_id_t frame_id;
+    if (!page_table_->Find(page_id, frame_id)) {
+      continue;
+    }
+    auto *page = GetPage(frame_id);
+    disk_manager_->WritePage(page_id, page->data_);
+    page->is_dirty_ = false;
   }
 }
 
@@ -138,11 +144,12 @@ auto BufferPoolManagerInstance::DeletePgImp(page_id_t page_id) -> bool {
   if (page->GetPinCount() > 0) {
     return false;
   }
-  free_list_.push_back(frame_id);
   page->ResetMemory();
   page->is_dirty_ = false;
-  page_table_->Remove(page_id);
+  page->pin_count_ = 0;
+  free_list_.push_back(frame_id);
 
+  page_table_->Remove(page_id);
   replacer_->Remove(frame_id);
 
   pages_set_.erase(page_id);
@@ -170,6 +177,7 @@ auto BufferPoolManagerInstance::GetFrame(frame_id_t *frame_id) -> bool {
   page->ResetMemory();
   page_table_->Remove(page->GetPageId());
   pages_set_.erase(page->GetPageId());
+  page->pin_count_ = 0;
   page->page_id_ = INVALID_PAGE_ID;
   return true;
 }

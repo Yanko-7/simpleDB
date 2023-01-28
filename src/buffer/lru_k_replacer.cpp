@@ -57,7 +57,9 @@ void LRUKReplacer::SetEvictable(frame_id_t frame_id, bool set_evictable) {
 
 void LRUKReplacer::Remove(frame_id_t frame_id) {
   std::scoped_lock<std::mutex> lock(latch_);
-  // BUSTUB_ASSERT(replacers_.find(frame_id) != replacers_.end(), true);
+  if (timestamp_.find(frame_id) != timestamp_.end()) {
+    BUSTUB_ASSERT(replacers_.find(frame_id) != replacers_.end(), true);
+  }
   if (timestamp_.find(frame_id) == timestamp_.end() || replacers_.find(frame_id) == replacers_.end()) {
     return;
   }

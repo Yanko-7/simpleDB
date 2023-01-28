@@ -9,7 +9,6 @@
 //
 //===----------------------------------------------------------------------===//
 #pragma once
-
 #include <queue>
 #include <string>
 #include <vector>
@@ -22,7 +21,7 @@
 namespace bustub {
 
 #define BPLUSTREE_TYPE BPlusTree<KeyType, ValueType, KeyComparator>
-
+enum class LatchType { QUERRY, INSERT, DELETE };
 /**
  * Main class providing the API for the Interactive B+ Tree.
  *
@@ -57,6 +56,33 @@ class BPlusTree {
   // return the page id of the root node
   auto GetRootPageId() -> page_id_t;
 
+  void ULock(Page *buffer_page, LatchType type);
+  void Lock(Page *buffer_page, LatchType type);
+  void RootLock(LatchType type);
+  void RootUnLock(LatchType type);
+
+  auto GetInternalPage(BPlusTreePage *page) -> InternalPage *;
+  auto GetLeafPage(BPlusTreePage *page) -> LeafPage *;
+
+  // clear the transaction and Unpin the buffer_page
+  void ClearTxPage(Transaction *transaction, LatchType type);
+
+  // pushup the delete
+  void DeleteFromParent(page_id_t delete_page_id, Transaction *transaction);
+
+  // pushup the insert
+  void InsertInParent(page_id_t other_page_id, const KeyType &Key, Transaction *transaction);
+
+  // find the pos which is belonged the key
+  auto FindIndex(const KeyType &key, InternalPage *page_id) -> int;
+  auto FindIndex(const KeyType &key, LeafPage *page_id) -> int;
+
+  // judge the page safe
+  auto Judge(BPlusTreePage *page, LatchType type) -> bool;
+
+  // find the leaf node of key
+  auto GetLeaf(const KeyType &key, Transaction *transaction, LatchType type) -> Page *;
+
   // index iterator
   auto Begin() -> INDEXITERATOR_TYPE;
   auto Begin(const KeyType &key) -> INDEXITERATOR_TYPE;
@@ -89,6 +115,7 @@ class BPlusTree {
   KeyComparator comparator_;
   int leaf_max_size_;
   int internal_max_size_;
+  ReaderWriterLatch root_rwlatch_;
 };
 
 }  // namespace bustub
