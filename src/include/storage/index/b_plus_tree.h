@@ -83,6 +83,7 @@ class BPlusTree {
   // find the leaf node of key
   auto GetLeaf(const KeyType &key, Transaction *transaction, LatchType type) -> Page *;
 
+  auto OptimGetLeaf(const KeyType &key, LatchType type) -> Page *;
   // index iterator
   auto Begin() -> INDEXITERATOR_TYPE;
   auto Begin(const KeyType &key) -> INDEXITERATOR_TYPE;

@@ -14,26 +14,32 @@
 
 namespace bustub {
 
-LRUKReplacer::LRUKReplacer(size_t num_frames, size_t k) : replacer_size_(num_frames), k_(k) {}
+LRUKReplacer::LRUKReplacer(size_t num_frames, size_t k)
+    : replacer_size_(num_frames), k_(k), timestamp_(num_frames, Frameinfo(k)) {}
 
 auto LRUKReplacer::Evict(frame_id_t *frame_id) -> bool {
   std::scoped_lock<std::mutex> lock(latch_);
-  if (replacers_.empty()) {
+  if (nomax_replacers_.size() + max_replacers_.size() == 0) {
     return false;
   }
-  bool flag = false;
-  for (auto x : replacers_) {
-    if (!flag || GetLastTime(x) < GetLastTime(*frame_id)) {
-      *frame_id = x;
-      flag = true;
-    } else if (GetLastTime(x) == GetLastTime(*frame_id)) {
-      if (timestamp_[x].front() < timestamp_[*frame_id].front()) {
+  if (!nomax_replacers_.empty()) {
+    *frame_id = *nomax_replacers_.begin();
+    for (auto x : nomax_replacers_) {
+      if (timestamp_[*frame_id].Getime() > timestamp_[x].Getime()) {
         *frame_id = x;
       }
     }
+    nomax_replacers_.erase(*frame_id);
+  } else {
+    *frame_id = *max_replacers_.begin();
+    for (auto x : max_replacers_) {
+      if (timestamp_[*frame_id].Getime() > timestamp_[x].Getime()) {
+        *frame_id = x;
+      }
+    }
+    max_replacers_.erase(*frame_id);
   }
-  replacers_.erase(*frame_id);
-  timestamp_.erase(*frame_id);
+  timestamp_[*frame_id].Clear();
   return true;
 }
 
@@ -43,49 +49,85 @@ void LRUKReplacer::RecordAccess(frame_id_t frame_id) {
   Addstamp(frame_id);
 }
 
+void LRUKReplacer::DelReplacers(frame_id_t frame_id) {
+  auto &x = timestamp_[frame_id];
+  if (!x.IsLive()) {
+    return;
+  }
+  if (x.IsMax()) {
+    if (InMaxReplacers(frame_id)) {
+      max_replacers_.erase(frame_id);
+    }
+  } else {
+    if (InNoMaxReplacers(frame_id)) {
+      nomax_replacers_.erase(frame_id);
+    }
+  }
+}
+
+void LRUKReplacer::AddReplacers(frame_id_t frame_id) {
+  auto &x = timestamp_[frame_id];
+  if (!x.IsLive()) {
+    return;
+  }
+  if (x.IsEvicatable()) {
+    if (x.IsMax()) {
+      max_replacers_.insert(frame_id);
+    } else {
+      nomax_replacers_.insert(frame_id);
+    }
+  }
+}
+
 void LRUKReplacer::SetEvictable(frame_id_t frame_id, bool set_evictable) {
   std::scoped_lock<std::mutex> lock(latch_);
   BUSTUB_ASSERT(frame_id <= static_cast<int>(replacer_size_) - 1, true);
+  auto &x = timestamp_[frame_id];
+  if (!x.IsLive()) {
+    return;
+  }
   if (set_evictable) {
-    if (timestamp_.find(frame_id) != timestamp_.end()) {
-      replacers_.insert(frame_id);
-    }
-  } else if (replacers_.find(frame_id) != replacers_.end()) {
-    replacers_.erase(frame_id);
+    x.SetEvictable(true);
+    AddReplacers(frame_id);
+  } else {
+    x.SetEvictable(false);
+    DelReplacers(frame_id);
   }
 }
 
 void LRUKReplacer::Remove(frame_id_t frame_id) {
   std::scoped_lock<std::mutex> lock(latch_);
-  if (timestamp_.find(frame_id) != timestamp_.end()) {
-    BUSTUB_ASSERT(replacers_.find(frame_id) != replacers_.end(), true);
+  if (timestamp_[frame_id].IsLive()) {
+    BUSTUB_ASSERT(InNoMaxReplacers(frame_id) || InMaxReplacers(frame_id), true);
   }
-  if (timestamp_.find(frame_id) == timestamp_.end() || replacers_.find(frame_id) == replacers_.end()) {
+  if (!timestamp_[frame_id].IsLive()) {
     return;
   }
-  replacers_.erase(frame_id);
-  timestamp_.erase(frame_id);
+  DelReplacers(frame_id);
+  timestamp_[frame_id].Clear();
 }
 
 auto LRUKReplacer::Size() -> size_t {
   std::scoped_lock<std::mutex> lock(latch_);
-  return replacers_.size();
+  return nomax_replacers_.size() + max_replacers_.size();
 }
 
-auto LRUKReplacer::GetLastTime(frame_id_t frame_id) -> size_t {
-  if (timestamp_[frame_id].size() < k_) {
-    return INF;
-  }
-  return timestamp_[frame_id].front();
+inline auto LRUKReplacer::InNoMaxReplacers(frame_id_t frame_id) -> bool {
+  return nomax_replacers_.find(frame_id) != nomax_replacers_.end();
 }
 
+inline auto LRUKReplacer::InMaxReplacers(frame_id_t frame_id) -> bool {
+  return max_replacers_.find(frame_id) != max_replacers_.end();
+}
 auto LRUKReplacer::Creattime() -> size_t { return ++current_timestamp_; }
 
 auto LRUKReplacer::Addstamp(frame_id_t frame_id) -> void {
-  timestamp_[frame_id].push(Creattime());
-  if (timestamp_[frame_id].size() > k_) {
-    timestamp_[frame_id].pop();
+  auto &x = timestamp_[frame_id];
+  x.Setlive(true);
+  x.Add(Creattime());
+  if (x.IsMax() && InNoMaxReplacers(frame_id)) {
+    nomax_replacers_.erase(frame_id);
+    max_replacers_.insert(frame_id);
   }
 }
-
 }  // namespace bustub

@@ -24,7 +24,6 @@
 #include "common/macros.h"
 
 namespace bustub {
-const size_t INF = 0;
 
 /**
  * LRUKReplacer implements the LRU-k replacement policy.
@@ -134,8 +133,43 @@ class LRUKReplacer {
    */
   auto Size() -> size_t;
   auto Creattime() -> size_t;
-  auto GetLastTime(frame_id_t frame_id) -> size_t;
   auto Addstamp(frame_id_t frame_id) -> void;
+
+  class Frameinfo {
+   public:
+    explicit Frameinfo(int k_) : time_(k_), max_k_(k_) {}
+    inline auto IsLive() -> bool { return live_; }
+    inline auto IsMax() -> bool { return size_ >= max_k_; }
+    inline auto IsEvicatable() -> bool { return evictable_; }
+    void Setlive(bool live) { live_ = live; }
+    void SetEvictable(bool evictable) { evictable_ = evictable; }
+    inline auto Getime() -> size_t {
+      if (IsMax()) {
+        return time_[pos_];
+      }
+      return time_[0];
+    }
+
+    void Clear() {
+      pos_ = 0;
+      size_ = 0;
+      evictable_ = false;
+      live_ = false;
+    }
+    void Add(int time) {
+      time_[pos_] = time;
+      pos_ = (pos_ + 1) % max_k_;
+      size_++;
+    }
+
+   private:
+    std::vector<size_t> time_;
+    int size_ = 0;
+    int pos_{0};
+    bool evictable_{false};
+    bool live_{false};
+    const int max_k_;
+  };
 
  private:
   // TODO(student): implement me! You can replace these member variables as you like.
@@ -144,9 +178,13 @@ class LRUKReplacer {
   // [[maybe_unused]] size_t curr_size_{0};
   [[maybe_unused]] size_t replacer_size_;
   [[maybe_unused]] size_t k_;
-  std::unordered_map<frame_id_t, std::queue<size_t>> timestamp_;
-  std::unordered_set<frame_id_t> replacers_;
+  std::vector<Frameinfo> timestamp_;
+  std::unordered_set<frame_id_t> max_replacers_;
+  std::unordered_set<frame_id_t> nomax_replacers_;
   std::mutex latch_;
+  void AddReplacers(frame_id_t frame_id);
+  void DelReplacers(frame_id_t frame_id);
+  auto InMaxReplacers(frame_id_t frame_id) -> bool;
+  auto InNoMaxReplacers(frame_id_t frame_id) -> bool;
 };
-
 }  // namespace bustub
