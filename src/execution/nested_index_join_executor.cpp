@@ -16,7 +16,7 @@ namespace bustub {
 
 NestIndexJoinExecutor::NestIndexJoinExecutor(ExecutorContext *exec_ctx, const NestedIndexJoinPlanNode *plan,
                                              std::unique_ptr<AbstractExecutor> &&child_executor)
-    : AbstractExecutor(exec_ctx), plan_(plan),child_executor_(std::move(child_executor)){
+    : AbstractExecutor(exec_ctx), plan_(plan), child_executor_(std::move(child_executor)) {
   if (!(plan->GetJoinType() == JoinType::LEFT || plan->GetJoinType() == JoinType::INNER)) {
     // Note for 2022 Fall: You ONLY need to implement left join and inner join.
     throw bustub::NotImplementedException(fmt::format("join type {} not supported", plan->GetJoinType()));
@@ -25,7 +25,7 @@ NestIndexJoinExecutor::NestIndexJoinExecutor(ExecutorContext *exec_ctx, const Ne
 
 void NestIndexJoinExecutor::Init() {
   child_executor_->Init();
-  //throw NotImplementedException("NestIndexJoinExecutor is not implemented");
+  // throw NotImplementedException("NestIndexJoinExecutor is not implemented");
 }
 
 auto NestIndexJoinExecutor::Next(Tuple *tuple, RID *rid) -> bool {

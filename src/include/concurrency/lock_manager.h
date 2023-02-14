@@ -63,6 +63,8 @@ class LockManager {
 
   class LockRequestQueue {
    public:
+    auto GetLock(Transaction *txn, LockMode lock_mode, table_oid_t table_id, const bool g[][5]) -> bool;
+    auto GetLock(Transaction *txn, LockMode lock_mode, table_oid_t table_id, RID rid, const bool g[][5]) -> bool;
     /** List of lock requests for the same resource (table or row) */
     std::list<LockRequest *> request_queue_;
     /** For notifying blocked transactions on this rid */
@@ -278,7 +280,7 @@ class LockManager {
    * @param t1 transaction waiting for a lock
    * @param t2 transaction being waited for
    */
-  auto RemoveEdge(txn_id_t t1, txn_id_t t2) -> void;
+  void RemoveEdge(txn_id_t t1, txn_id_t t2);
 
   /**
    * Checks if the graph has a cycle, returning the newest transaction ID in the cycle if so.
@@ -313,7 +315,22 @@ class LockManager {
   std::thread *cycle_detection_thread_;
   /** Waits-for graph representation. */
   std::unordered_map<txn_id_t, std::vector<txn_id_t>> waits_for_;
+  std::unordered_set<txn_id_t> sett_;
+  std::unordered_set<txn_id_t> book_;
   std::mutex waits_for_latch_;
+
+  const bool g_[5][5] = {{true, false, true, false, false},
+                         {false, false, false, false, false},
+                         {true, false, true, true, true},
+                         {false, false, true, true, false},
+                         {false, false, true, false, false}};
+  void CheckIsolationLevel(Transaction *txn, LockMode lock_mode);
+  void CheckSuitable(Transaction *txn, LockMode lock_mode, LockRequest *req, txn_id_t upgrading);
+  void EraseFromTxn(Transaction *txn, LockMode lock_mode, table_oid_t oid, RID rid);
+  void EraseFromTxn(Transaction *txn, LockMode lock_mode, table_oid_t oid);
+  auto DFS(txn_id_t u, txn_id_t maxnid) -> int;
+  void CreateGraph();
+  void Inform(Transaction *txn);
 };
 
 }  // namespace bustub

@@ -14,19 +14,21 @@
 
 namespace bustub {
 
-SeqScanExecutor::SeqScanExecutor(ExecutorContext *exec_ctx, const SeqScanPlanNode *plan) : AbstractExecutor(exec_ctx),plan_(plan) {
-}
+SeqScanExecutor::SeqScanExecutor(ExecutorContext *exec_ctx, const SeqScanPlanNode *plan)
+    : AbstractExecutor(exec_ctx), plan_(plan) {}
 
 void SeqScanExecutor::Init() {
-  it =  exec_ctx_->GetCatalog()->GetTable(plan_->GetTableOid())->table_->Begin(exec_ctx_->GetTransaction());
-  //throw NotImplementedException("SeqScanExecutor is not implemented");
+  it_ = exec_ctx_->GetCatalog()->GetTable(plan_->GetTableOid())->table_->Begin(exec_ctx_->GetTransaction());
+  // throw NotImplementedException("SeqScanExecutor is not implemented");
 }
 
 auto SeqScanExecutor::Next(Tuple *tuple, RID *rid) -> bool {
-  if(it == exec_ctx_->GetCatalog()->GetTable(plan_->GetTableOid())->table_->End()){ return false; }
-  *tuple = *it;
+  if (it_ == exec_ctx_->GetCatalog()->GetTable(plan_->GetTableOid())->table_->End()) {
+    return false;
+  }
+  *tuple = *it_;
   *rid = tuple->GetRid();
-  it++;
+  it_++;
   return true;
 }
 

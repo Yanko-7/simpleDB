@@ -50,7 +50,7 @@ class SimpleAggregationHashTable {
         case AggregationType::CountStarAggregate:
           // Count start starts at zero.
           values.emplace_back(ValueFactory::GetIntegerValue(0));
-          continue ;
+          continue;
         case AggregationType::CountAggregate:
         case AggregationType::SumAggregate:
         case AggregationType::MinAggregate:
@@ -75,43 +75,47 @@ class SimpleAggregationHashTable {
       switch (agg_types_[i]) {
         case AggregationType::CountStarAggregate:
           result->aggregates_[i] = result->aggregates_[i].Add(ValueFactory::GetIntegerValue(1));
-          continue ;
+          continue;
         case AggregationType::CountAggregate:
-          if(input.aggregates_[i].IsNull()){ continue; }
-          if(result->aggregates_[i].IsNull()){
-            result->aggregates_[i] = ValueFactory::GetIntegerValue(1);
+          if (input.aggregates_[i].IsNull()) {
+            continue;
           }
-          else {
+          if (result->aggregates_[i].IsNull()) {
+            result->aggregates_[i] = ValueFactory::GetIntegerValue(1);
+          } else {
             result->aggregates_[i] = result->aggregates_[i].Add(ValueFactory::GetIntegerValue(1));
           }
-          continue ;
+          continue;
         case AggregationType::SumAggregate:
-          if(input.aggregates_[i].IsNull()){ continue; }
-          if(result->aggregates_[i].IsNull()){
-            result->aggregates_[i] = input.aggregates_[i];
+          if (input.aggregates_[i].IsNull()) {
+            continue;
           }
-          else {
+          if (result->aggregates_[i].IsNull()) {
+            result->aggregates_[i] = input.aggregates_[i];
+          } else {
             result->aggregates_[i] = result->aggregates_[i].Add(input.aggregates_[i]);
           }
-          continue ;
+          continue;
         case AggregationType::MinAggregate:
-          if(input.aggregates_[i].IsNull()){ continue; }
-          if(result->aggregates_[i].IsNull()){
-            result->aggregates_[i] = input.aggregates_[i];
+          if (input.aggregates_[i].IsNull()) {
+            continue;
           }
-          else {
+          if (result->aggregates_[i].IsNull()) {
+            result->aggregates_[i] = input.aggregates_[i];
+          } else {
             result->aggregates_[i] = result->aggregates_[i].Min(input.aggregates_[i]);
           }
-          continue ;
+          continue;
         case AggregationType::MaxAggregate:
-          if(input.aggregates_[i].IsNull()){ continue; }
-          if(result->aggregates_[i].IsNull()){
-            result->aggregates_[i] = input.aggregates_[i];
+          if (input.aggregates_[i].IsNull()) {
+            continue;
           }
-          else {
+          if (result->aggregates_[i].IsNull()) {
+            result->aggregates_[i] = input.aggregates_[i];
+          } else {
             result->aggregates_[i] = result->aggregates_[i].Max(input.aggregates_[i]);
           }
-          break ;
+          break;
       }
     }
   }
@@ -239,6 +243,6 @@ class AggregationExecutor : public AbstractExecutor {
   // TODO(Student): Uncomment SimpleAggregationHashTable::Iterator aht_iterator_;
   SimpleAggregationHashTable aht_;
   SimpleAggregationHashTable::Iterator aht_iterator_;
-  bool has_out{false};
+  bool has_out_{false};
 };
 }  // namespace bustub

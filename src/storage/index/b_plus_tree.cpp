@@ -42,7 +42,9 @@ auto BPLUSTREE_TYPE::FindIndex(const KeyType &key, InternalPage *page_id) -> int
 
 INDEX_TEMPLATE_ARGUMENTS
 auto BPLUSTREE_TYPE::FindIndex(const KeyType &key, LeafPage *page_id) -> int {
-  if(page_id->GetSize() == 0){ return -1; }
+  if (page_id->GetSize() == 0) {
+    return -1;
+  }
   if (page_id->GetSize() == 1) {
     if (comparator_(page_id->KeyAt(0), key) > 0) {
       return -1;
@@ -621,7 +623,7 @@ void BPLUSTREE_TYPE::Remove(const KeyType &key, Transaction *transaction) {
  */
 INDEX_TEMPLATE_ARGUMENTS
 auto BPLUSTREE_TYPE::Begin() -> INDEXITERATOR_TYPE {
-  if(GetRootPageId() == INVALID_PAGE_ID){
+  if (GetRootPageId() == INVALID_PAGE_ID) {
     return INDEXITERATOR_TYPE(0, nullptr, buffer_pool_manager_);
   }
   auto buffer_page = buffer_pool_manager_->FetchPage(GetRootPageId());
@@ -645,7 +647,7 @@ auto BPLUSTREE_TYPE::Begin() -> INDEXITERATOR_TYPE {
 }
 INDEX_TEMPLATE_ARGUMENTS
 auto BPLUSTREE_TYPE::Begin(const KeyType &key) -> INDEXITERATOR_TYPE {
-  if(GetRootPageId() == INVALID_PAGE_ID){
+  if (GetRootPageId() == INVALID_PAGE_ID) {
     return INDEXITERATOR_TYPE(0, nullptr, buffer_pool_manager_);
   }
   auto buffer_page = buffer_pool_manager_->FetchPage(GetRootPageId());
