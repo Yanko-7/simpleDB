@@ -173,7 +173,6 @@ void RowLockTest1() {
     res = lock_mgr.UnlockTable(txns[txn_id], oid);
     EXPECT_TRUE(res);
     CheckShrinking(txns[txn_id]);
-
     txn_mgr.Commit(txns[txn_id]);
     CheckCommitted(txns[txn_id]);
   };

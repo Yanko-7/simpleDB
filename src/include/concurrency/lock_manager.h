@@ -63,10 +63,8 @@ class LockManager {
 
   class LockRequestQueue {
    public:
-    auto GetLock(Transaction *txn, LockMode lock_mode, table_oid_t table_id, const bool g[][5]) -> bool;
-    auto GetLock(Transaction *txn, LockMode lock_mode, table_oid_t table_id, RID rid, const bool g[][5]) -> bool;
     /** List of lock requests for the same resource (table or row) */
-    std::list<LockRequest *> request_queue_;
+    std::list<std::shared_ptr<LockRequest>> request_queue_;
     /** For notifying blocked transactions on this rid */
     std::condition_variable cv_;
     /** txn_id of an upgrading transaction (if any) */
@@ -331,6 +329,12 @@ class LockManager {
   auto DFS(txn_id_t u, txn_id_t maxnid) -> int;
   void CreateGraph();
   void Inform(Transaction *txn);
+  void InsertToTxn(Transaction *txn, LockMode lock_mode, table_oid_t table_id);
+  void InsertToTxn(Transaction *txn, LockMode lock_mode, table_oid_t table_id, RID rid);
+  auto GetLock(std::shared_ptr<LockRequestQueue> que, Transaction *txn, LockMode lock_mode, table_oid_t table_id,
+               std::unique_lock<std::mutex> &lock) -> bool;
+  auto GetLock(std::shared_ptr<LockRequestQueue> que, Transaction *txn, LockMode lock_mode, table_oid_t table_id,
+               RID rid, std::unique_lock<std::mutex> &lock) -> bool;
 };
 
 }  // namespace bustub
