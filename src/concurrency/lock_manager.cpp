@@ -49,6 +49,7 @@ void LockManager::CheckSuitable(Transaction *txn, LockMode lock_mode, LockReques
     throw TransactionAbortException(txn->GetTransactionId(), AbortReason::UPGRADE_CONFLICT);
   }
   //
+  std::cout<<(int)lock_mode<<' '<<(int)req->lock_mode_<<std::endl;
   if (req->lock_mode_ == LockMode::EXCLUSIVE) {
     txn->SetState(TransactionState::ABORTED);
     throw TransactionAbortException(txn->GetTransactionId(), AbortReason::INCOMPATIBLE_UPGRADE);

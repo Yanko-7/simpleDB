@@ -22,6 +22,14 @@ DeleteExecutor::DeleteExecutor(ExecutorContext *exec_ctx, const DeletePlanNode *
 
 void DeleteExecutor::Init() {
   child_executor_->Init();
+  try {
+    if (!exec_ctx_->GetLockManager()->LockTable(exec_ctx_->GetTransaction(), LockManager::LockMode::INTENTION_EXCLUSIVE,
+                                                plan_->TableOid())) {
+      throw ExecutionException("1delete lock IN_table fail");
+    }
+  } catch (TransactionAbortException &e) {
+    throw ExecutionException("2delete lock IN_table fail");
+  }
   has_output_ = false;
   // throw NotImplementedException("DeleteExecutor is not implemented");
 }
@@ -40,6 +48,14 @@ auto DeleteExecutor::Next([[maybe_unused]] Tuple *tuple, RID *rid) -> bool {
   RID child_rid;
   int cnt = 0;
   while (child_executor_->Next(&child_tuple, &child_rid)) {
+    try {
+      if (!exec_ctx_->GetLockManager()->LockRow(exec_ctx_->GetTransaction(), LockManager::LockMode::EXCLUSIVE,
+                                                plan_->TableOid(), child_rid)) {
+        throw ExecutionException("delete lock row fail");
+      }
+    } catch (TransactionAbortException &e) {
+      throw ExecutionException("delete lock IN_row fail");
+    }
     if (table_info->table_->MarkDelete(child_rid, exec_ctx_->GetTransaction())) {
       cnt++;
       for (auto &index_info : exec_ctx_->GetCatalog()->GetTableIndexes(table_info->name_)) {

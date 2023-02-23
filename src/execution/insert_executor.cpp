@@ -23,8 +23,16 @@ InsertExecutor::InsertExecutor(ExecutorContext *exec_ctx, const InsertPlanNode *
 void InsertExecutor::Init() {
   has_output_ = false;
   child_executor_->Init();
+  try {
+    if (!exec_ctx_->GetLockManager()->LockTable(exec_ctx_->GetTransaction(), LockManager::LockMode::INTENTION_EXCLUSIVE,
+                                                plan_->TableOid())) {
+      throw ExecutionException("1lock table fail");
+    }
+  } catch (TransactionAbortException &e) {
+    throw ExecutionException("2lock table fail");
+  }
 }
-
+// the next only exec once
 auto InsertExecutor::Next([[maybe_unused]] Tuple *tuple, RID *rid) -> bool {
   if (has_output_) {
     return false;
@@ -38,6 +46,7 @@ auto InsertExecutor::Next([[maybe_unused]] Tuple *tuple, RID *rid) -> bool {
   Tuple child_tuple;
   RID child_rid;
   int cnt = 0;
+  // Get each son data which is inserted,insert one by one
   while (child_executor_->Next(&child_tuple, &child_rid)) {
     if (table_info->table_->InsertTuple(child_tuple, &child_rid, exec_ctx_->GetTransaction())) {
       cnt++;
